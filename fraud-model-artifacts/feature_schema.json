@@ -1,0 +1,156 @@
+{
+  "schema_version": "1.0",
+  "target": "Class",
+  "features": [
+    {
+      "name": "Time",
+      "dtype": "float64",
+      "position": 0
+    },
+    {
+      "name": "V1",
+      "dtype": "float64",
+      "position": 1
+    },
+    {
+      "name": "V2",
+      "dtype": "float64",
+      "position": 2
+    },
+    {
+      "name": "V3",
+      "dtype": "float64",
+      "position": 3
+    },
+    {
+      "name": "V4",
+      "dtype": "float64",
+      "position": 4
+    },
+    {
+      "name": "V5",
+      "dtype": "float64",
+      "position": 5
+    },
+    {
+      "name": "V6",
+      "dtype": "float64",
+      "position": 6
+    },
+    {
+      "name": "V7",
+      "dtype": "float64",
+      "position": 7
+    },
+    {
+      "name": "V8",
+      "dtype": "float64",
+      "position": 8
+    },
+    {
+      "name": "V9",
+      "dtype": "float64",
+      "position": 9
+    },
+    {
+      "name": "V10",
+      "dtype": "float64",
+      "position": 10
+    },
+    {
+      "name": "V11",
+      "dtype": "float64",
+      "position": 11
+    },
+    {
+      "name": "V12",
+      "dtype": "float64",
+      "position": 12
+    },
+    {
+      "name": "V13",
+      "dtype": "float64",
+      "position": 13
+    },
+    {
+      "name": "V14",
+      "dtype": "float64",
+      "position": 14
+    },
+    {
+      "name": "V15",
+      "dtype": "float64",
+      "position": 15
+    },
+    {
+      "name": "V16",
+      "dtype": "float64",
+      "position": 16
+    },
+    {
+      "name": "V17",
+      "dtype": "float64",
+      "position": 17
+    },
+    {
+      "name": "V18",
+      "dtype": "float64",
+      "position": 18
+    },
+    {
+      "name": "V19",
+      "dtype": "float64",
+      "position": 19
+    },
+    {
+      "name": "V20",
+      "dtype": "float64",
+      "position": 20
+    },
+    {
+      "name": "V21",
+      "dtype": "float64",
+      "position": 21
+    },
+    {
+      "name": "V22",
+      "dtype": "float64",
+      "position": 22
+    },
+    {
+      "name": "V23",
+      "dtype": "float64",
+      "position": 23
+    },
+    {
+      "name": "V24",
+      "dtype": "float64",
+      "position": 24
+    },
+    {
+      "name": "V25",
+      "dtype": "float64",
+      "position": 25
+    },
+    {
+      "name": "V26",
+      "dtype": "float64",
+      "position": 26
+    },
+    {
+      "name": "V27",
+      "dtype": "float64",
+      "position": 27
+    },
+    {
+      "name": "V28",
+      "dtype": "float64",
+      "position": 28
+    },
+    {
+      "name": "Amount",
+      "dtype": "float64",
+      "position": 29
+    }
+  ]
+}
