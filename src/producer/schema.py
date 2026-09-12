@@ -4,7 +4,7 @@ from typing import Any
 
 FEATURE_COLUMNS = ["Time"] + [f"V{i}" for i in range(1, 29)] + ["Amount"]
 REQUIRED_COLUMNS = FEATURE_COLUMNS + ["Class"]
-SCHEMA_VERSION = "1.0"
+from src.common.constants import SCHEMA_VERSION
 
 
 def validate_source_row(row: dict[str, Any]) -> None:

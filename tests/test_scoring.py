@@ -18,10 +18,13 @@ class FakePipeline:
 def valid_event():
     return {
         "transaction_id": "test-transaction-1",
+        "run_id": "test-run",
+        "source_row_index": 0,
         "event_time": datetime.now(timezone.utc).isoformat(),
         "producer_time": datetime.now(timezone.utc).isoformat(),
         "source": "test",
-        "schema_version": "1.0",
+        "replay_mode": "demo",
+        "schema_version": "1.1",
         "sequence_number": 1,
         "actual_label": 1,
         "features": {name: (10.0 if name == "Amount" else 0.0) for name in FEATURE_COLUMNS},

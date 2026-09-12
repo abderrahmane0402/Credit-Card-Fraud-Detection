@@ -1,6 +1,4 @@
-pandas==2.3.2
-plotly==6.3.0
+-r requirements-common.txt
 psycopg2-binary==2.9.10
-python-dotenv==1.1.1
 streamlit==1.49.1
-pytest==8.4.2
+plotly==6.3.0

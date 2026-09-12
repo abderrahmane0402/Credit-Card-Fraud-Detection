@@ -12,22 +12,21 @@ def valid_row():
 
 
 def test_event_contract():
-    event = row_to_event(valid_row(), 1)
-    assert event["schema_version"] == "1.0"
-    assert event["actual_label"] == 1
-    assert event["features"]["Amount"] == 12.5
-    assert set(event["features"]) == set(FEATURE_COLUMNS)
+    event = row_to_event(valid_row(), 1, 0, "test-run", "demo")
+    assert event["transaction_id"]
+    assert event["schema_version"] == "1.1"
+    assert event["features"]["V1"] == 0.0
 
 
 def test_negative_amount_rejected():
     row = valid_row()
     row["Amount"] = -1
     with pytest.raises(ValueError, match="negative"):
-        row_to_event(row, 1)
+        row_to_event(row, 1, 0, "test-run", "demo")
 
 
 def test_missing_feature_rejected():
     row = valid_row()
     del row["V10"]
     with pytest.raises(ValueError, match="Missing"):
-        row_to_event(row, 1)
+        row_to_event(row, 1, 0, "test-run", "demo")

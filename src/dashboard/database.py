@@ -37,81 +37,45 @@ def read_dataframe(query: str, parameters: tuple | None = None) -> pd.DataFrame:
 
 
 def fetch_summary() -> dict[str, float | int | None]:
-    query = """
-        SELECT
-            COUNT(*)::bigint AS total_predictions,
-            COUNT(*) FILTER (WHERE predicted_label = 1)::bigint AS fraud_alerts,
-            COALESCE(AVG(fraud_score), 0)::double precision AS avg_risk_score,
-            COALESCE(AVG(processing_latency_ms), 0)::double precision AS avg_latency_ms,
-            COALESCE(
-                PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY processing_latency_ms),
-                0
-            )::double precision AS p95_latency_ms,
-            MAX(processed_at) AS last_processed_at
-        FROM predictions
-    """
+    query = "SELECT * FROM dashboard_summary"
     with database_connection() as connection:
         with connection.cursor() as cursor:
             cursor.execute(query)
             row = cursor.fetchone()
+    if row is None:
+        return {
+            "total_predictions": 0,
+            "fraud_alerts": 0,
+            "alert_rate": 0.0,
+            "avg_latency_ms": 0.0,
+            "p95_latency_ms": 0.0,
+            "last_processed_at": None,
+        }
     return {
         "total_predictions": int(row[0] or 0),
         "fraud_alerts": int(row[1] or 0),
-        "avg_risk_score": float(row[2] or 0),
+        "alert_rate": float(row[2] or 0),
         "avg_latency_ms": float(row[3] or 0),
         "p95_latency_ms": float(row[4] or 0),
         "last_processed_at": row[5],
     }
 
 
-def fetch_performance() -> dict[str, float | int]:
-    query = """
-        SELECT
-            COUNT(*) FILTER (
-                WHERE p.predicted_label = 1 AND t.actual_label = 1
-            )::bigint AS true_positives,
-            COUNT(*) FILTER (
-                WHERE p.predicted_label = 1 AND t.actual_label = 0
-            )::bigint AS false_positives,
-            COUNT(*) FILTER (
-                WHERE p.predicted_label = 0 AND t.actual_label = 1
-            )::bigint AS false_negatives,
-            COUNT(*) FILTER (
-                WHERE p.predicted_label = 0 AND t.actual_label = 0
-            )::bigint AS true_negatives
-        FROM predictions p
-        JOIN transactions t USING (transaction_id)
-        WHERE t.actual_label IS NOT NULL
-    """
-    with database_connection() as connection:
-        with connection.cursor() as cursor:
-            cursor.execute(query)
-            tp, fp, fn, tn = [int(value or 0) for value in cursor.fetchone()]
-
-    precision = tp / (tp + fp) if tp + fp else 0.0
-    recall = tp / (tp + fn) if tp + fn else 0.0
-    f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
-    return {
-        "true_positives": tp,
-        "false_positives": fp,
-        "false_negatives": fn,
-        "true_negatives": tn,
-        "precision": precision,
-        "recall": recall,
-        "f1": f1,
-    }
+def fetch_performance() -> pd.DataFrame:
+    query = "SELECT * FROM dashboard_performance"
+    return read_dataframe(query)
 
 
 def fetch_recent_predictions(limit: int, minimum_score: float, labels: tuple[int, ...]) -> pd.DataFrame:
     query = """
         SELECT
-            p.transaction_id::text,
-            p.processed_at,
+            t.transaction_id::text,
+            t.event_time,
             t.amount,
             t.actual_label,
-            p.predicted_label,
             p.fraud_score,
-            p.decision_threshold,
+            p.predicted_label,
+            p.processor,
             p.model_version,
             p.processing_latency_ms
         FROM predictions p
@@ -126,16 +90,9 @@ def fetch_recent_predictions(limit: int, minimum_score: float, labels: tuple[int
 
 def fetch_timeseries(minutes: int) -> pd.DataFrame:
     query = """
-        SELECT
-            DATE_TRUNC('minute', p.processed_at) AS minute,
-            COUNT(*)::bigint AS transactions,
-            COUNT(*) FILTER (WHERE p.predicted_label = 1)::bigint AS fraud_alerts,
-            AVG(p.fraud_score)::double precision AS average_risk,
-            AVG(p.processing_latency_ms)::double precision AS average_latency_ms
-        FROM predictions p
-        WHERE p.processed_at >= NOW() - (%s * INTERVAL '1 minute')
-        GROUP BY 1
-        ORDER BY 1
+        SELECT *
+        FROM dashboard_minute_metrics
+        WHERE minute >= NOW() - (%s * INTERVAL '1 minute')
     """
     return read_dataframe(query, (minutes,))
 
@@ -155,3 +112,11 @@ def fetch_risk_distribution() -> pd.DataFrame:
             lambda value: f"{max(0, value - 1) * 0.05:.2f}-{min(value * 0.05, 1):.2f}"
         )
     return frame
+
+def fetch_data_quality() -> pd.DataFrame:
+    query = "SELECT * FROM dashboard_data_quality LIMIT 50"
+    return read_dataframe(query)
+
+def fetch_processor_health() -> pd.DataFrame:
+    query = "SELECT * FROM dashboard_processor_health LIMIT 10"
+    return read_dataframe(query)

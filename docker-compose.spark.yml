@@ -1,0 +1,34 @@
+name: fraud-detection-streaming
+
+services:
+  consumer-python:
+    profiles:
+      - donotstart
+
+  spark-consumer:
+    build:
+      context: .
+      dockerfile: docker/spark.Dockerfile
+    container_name: fraud-spark-consumer
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      topic-init:
+        condition: service_completed_successfully
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-fraud_db}
+      POSTGRES_USER: ${POSTGRES_USER:-fraud_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fraud_dev_password}
+    volumes:
+      - ./models:/app/models:ro
+      - spark_checkpoints:/checkpoints
+    networks: [fraud-net]
+    restart: on-failure
+
+volumes:
+  spark_checkpoints:

@@ -86,13 +86,80 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fraud_dev_password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./sql/init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
+      - ./sql/001_init.sql:/docker-entrypoint-initdb.d/001-init.sql:ro
+      - ./sql/002_dashboard_views.sql:/docker-entrypoint-initdb.d/002-dashboard_views.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fraud_user} -d ${POSTGRES_DB:-fraud_db}"]
       interval: 5s
       timeout: 5s
-      retries: 15
     networks: [fraud-net]
+
+  consumer-python:
+    build:
+      context: .
+      dockerfile: docker/consumer.Dockerfile
+    container_name: fraud-consumer-python
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      topic-init:
+        condition: service_completed_successfully
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-fraud_db}
+      POSTGRES_USER: ${POSTGRES_USER:-fraud_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fraud_dev_password}
+    volumes:
+      - ./models:/app/models:ro
+    networks: [fraud-net]
+    restart: on-failure
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: docker/dashboard.Dockerfile
+    container_name: fraud-dashboard
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8501:8501"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-fraud_db}
+      POSTGRES_USER: ${POSTGRES_USER:-fraud_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fraud_dev_password}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [fraud-net]
+    restart: on-failure
+
+  producer:
+    build:
+      context: .
+      dockerfile: docker/producer.Dockerfile
+    container_name: fraud-producer
+    profiles:
+      - simulation
+    depends_on:
+      kafka:
+        condition: service_healthy
+      topic-init:
+        condition: service_completed_successfully
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    volumes:
+      - ./data:/app/data:ro
+    networks: [fraud-net]
+    restart: "no"
 
 volumes:
   kafka_data:

@@ -14,7 +14,10 @@ from confluent_kafka import Consumer, KafkaError, KafkaException, Producer
 from dotenv import load_dotenv
 from psycopg2.extras import Json
 
-from src.consumer.scoring import FraudScorer
+from src.scoring.model_loader import load_model_bundle
+from src.scoring.inference import score_transaction
+from src.common.config import get_kafka_config, get_postgres_config
+from src.common.constants import TOPIC_RAW, TOPIC_SCORED, TOPIC_DEAD_LETTER, MODELS_DIR
 
 LOG = logging.getLogger("fraud-consumer")
 RUNNING = True
@@ -33,24 +36,14 @@ def stop_handler(signum, frame) -> None:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Score Kafka transactions and write predictions to PostgreSQL")
     parser.add_argument("--bootstrap-servers", default=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"))
-    parser.add_argument("--input-topic", default=os.getenv("KAFKA_INPUT_TOPIC", "transactions.raw"))
-    parser.add_argument("--output-topic", default=os.getenv("KAFKA_OUTPUT_TOPIC", "transactions.scored"))
-    parser.add_argument("--dead-letter-topic", default=os.getenv("KAFKA_DEAD_LETTER_TOPIC", "transactions.dead-letter"))
+    parser.add_argument("--input-topic", default=os.getenv("KAFKA_INPUT_TOPIC", TOPIC_RAW))
+    parser.add_argument("--output-topic", default=os.getenv("KAFKA_OUTPUT_TOPIC", TOPIC_SCORED))
+    parser.add_argument("--dead-letter-topic", default=os.getenv("KAFKA_DEAD_LETTER_TOPIC", TOPIC_DEAD_LETTER))
     parser.add_argument("--group-id", default=os.getenv("KAFKA_CONSUMER_GROUP", "fraud-scoring-v1"))
-    parser.add_argument("--model-dir", default="models")
+    parser.add_argument("--model-dir", default=str(MODELS_DIR))
     parser.add_argument("--max-messages", type=int, default=None)
     parser.add_argument("--reset-offset", choices=["earliest", "latest"], default="earliest")
     return parser.parse_args()
-
-
-def postgres_config() -> dict:
-    return {
-        "dbname": os.getenv("POSTGRES_DB", "fraud_db"),
-        "user": os.getenv("POSTGRES_USER", "fraud_user"),
-        "password": os.getenv("POSTGRES_PASSWORD", "fraud_dev_password"),
-        "host": os.getenv("POSTGRES_HOST", "localhost"),
-        "port": int(os.getenv("POSTGRES_PORT", "5432")),
-    }
 
 
 def publish_json(producer: Producer, topic: str, key: str | None, payload: dict) -> None:
@@ -71,29 +64,31 @@ def write_prediction(connection, event: dict, result: dict, processed_at: dateti
         cursor.execute(
             """
             INSERT INTO transactions (
-                transaction_id, event_time, producer_time, source, schema_version,
+                transaction_id, run_id, source_row_index, sequence_number, event_time, 
+                producer_time, source, replay_mode, schema_version,
                 amount, elapsed_time, features, actual_label
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (transaction_id) DO NOTHING
             """,
             (
-                event["transaction_id"], event["event_time"], event["producer_time"],
-                event["source"], event["schema_version"], float(features["Amount"]),
-                float(features["Time"]), Json(features), int(event["actual_label"]),
+                event.get("transaction_id"), event.get("run_id"), event.get("source_row_index"), 
+                event.get("sequence_number"), event.get("event_time"), event.get("producer_time"),
+                event.get("source"), event.get("replay_mode"), event.get("schema_version"), 
+                float(features.get("Amount", 0)), float(features.get("Time", 0)), Json(features), int(event.get("actual_label", -1)),
             ),
         )
         cursor.execute(
             """
             INSERT INTO predictions (
-                transaction_id, model_version, fraud_score, decision_threshold,
-                predicted_label, processed_at, processing_latency_ms
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (transaction_id, model_version) DO NOTHING
+                transaction_id, model_version, processor, fraud_score, decision_threshold,
+                predicted_label, processed_at, processing_latency_ms, stream_batch_id, prediction_correct
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (transaction_id, model_version, processor) DO NOTHING
             """,
             (
-                event["transaction_id"], result["model_version"], result["fraud_score"],
-                result["decision_threshold"], result["predicted_label"], processed_at,
-                latency_ms,
+                event.get("transaction_id"), result.get("model_version"), result.get("processor", "python"), 
+                result.get("fraud_score"), result.get("decision_threshold"), result.get("predicted_label"), 
+                processed_at, latency_ms, result.get("stream_batch_id"), result.get("prediction_correct"),
             ),
         )
     connection.commit()
@@ -113,8 +108,8 @@ def write_quality_event(connection, message, reason: str, raw_payload: str | Non
 
 
 def run(args: argparse.Namespace) -> int:
-    scorer = FraudScorer(args.model_dir)
-    connection = psycopg2.connect(**postgres_config())
+    bundle = load_model_bundle(args.model_dir)
+    connection = psycopg2.connect(**get_postgres_config())
     consumer = Consumer({
         "bootstrap.servers": args.bootstrap_servers,
         "group.id": args.group_id,
@@ -131,7 +126,7 @@ def run(args: argparse.Namespace) -> int:
     consumer.subscribe([args.input_topic])
     processed = 0
     LOG.info("Consumer started: topic=%s group=%s model=%s threshold=%.10f",
-             args.input_topic, args.group_id, scorer.model_version, scorer.threshold)
+             args.input_topic, args.group_id, bundle.model_version, bundle.decision_threshold)
 
     try:
         while RUNNING and (args.max_messages is None or processed < args.max_messages):
@@ -147,15 +142,21 @@ def run(args: argparse.Namespace) -> int:
             try:
                 raw_payload = message.value().decode("utf-8")
                 event = json.loads(raw_payload)
-                result = scorer.score(event)
-                processed_at = utc_now()
+                scored_event = score_transaction(event, bundle)
+                processed_at = datetime.fromisoformat(scored_event["processed_time"])
+                
+                # result dictionary to match older logic variables for write_prediction
+                result = {
+                    "model_version": scored_event["model_version"],
+                    "fraud_score": scored_event["risk_score"],
+                    "decision_threshold": scored_event["decision_threshold"],
+                    "predicted_label": scored_event["predicted_label"],
+                    "processor": scored_event.get("processor", "python"),
+                    "stream_batch_id": scored_event.get("stream_batch_id"),
+                    "prediction_correct": scored_event.get("prediction_correct"),
+                }
                 write_prediction(connection, event, result, processed_at)
 
-                scored_event = {
-                    **event,
-                    **result,
-                    "processed_time": processed_at.isoformat(),
-                }
                 publish_json(producer, args.output_topic, event["transaction_id"], scored_event)
                 producer.flush(10)
                 consumer.commit(message=message, asynchronous=False)

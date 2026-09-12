@@ -1,7 +1,4 @@
-joblib
-numpy
-pandas
-psycopg2-binary
-python-dotenv
-scikit-learn==1.6.1
-xgboost==3.2.0
+-r requirements-producer.txt
+-r requirements-consumer.txt
+-r requirements-dashboard.txt
+pytest==8.4.2

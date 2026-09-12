@@ -5,14 +5,16 @@ from datetime import datetime
 from typing import Any
 
 from src.producer.schema import FEATURE_COLUMNS, SCHEMA_VERSION
-
 REQUIRED_EVENT_FIELDS = [
     "transaction_id",
+    "run_id",
+    "source_row_index",
+    "sequence_number",
     "event_time",
     "producer_time",
     "source",
+    "replay_mode",
     "schema_version",
-    "sequence_number",
     "actual_label",
     "features",
 ]
