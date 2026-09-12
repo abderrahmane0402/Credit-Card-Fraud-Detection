@@ -82,6 +82,8 @@ docker compose --profile simulation up -d --build
 
 ## 📊 The SOC Dashboard
 
+![Dashboard Overview](fraud_app_acceuil.png)
+
 Once the containers are running, navigate to:
 - **SOC Dashboard:** http://localhost:8501
 - **Kafka UI:** http://localhost:8080

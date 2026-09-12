@@ -5,6 +5,5 @@ __pycache__/
 .pytest_cache/
 .ipynb_checkpoints/
 data/*.csv
-models/*.joblib
 checkpoints/
 .DS_Store
