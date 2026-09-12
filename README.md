@@ -51,7 +51,20 @@ flowchart LR
 
 ## 🚀 Running the System
 
-To give you the complete experience, this repository comes with a built-in **Simulation Producer**. When started, it will deterministically replay the historical Kaggle dataset into the Kafka stream at 20 transactions per second to simulate live banking traffic.
+### 1. Prerequisites: Dataset Setup
+Because of Git size limits, `creditcard.csv` is excluded from the repository. Before starting the containers, download the dataset and place it in the `data/` folder:
+
+1. Download **[Credit Card Fraud Detection](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud)** from Kaggle.
+2. Unzip the file and place `creditcard.csv` into the `data/` directory:
+   ```bash
+   # Destination:
+   data/creditcard.csv
+   ```
+
+---
+
+### 2. Launching the Services
+This repository comes with a built-in **Simulation Producer**. When started, it will deterministically replay the historical Kaggle dataset into the Kafka stream at 20 transactions per second to simulate live banking traffic.
 
 You have two choices for the backend processing engine. **We highly recommend using the Spark Engine** to demonstrate Big Data streaming capabilities.
 
