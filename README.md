@@ -2,6 +2,8 @@
 
 An end-to-end, containerized Real-Time Fraud Detection System designed to ingest, score, and visualize credit card transactions at scale. This project demonstrates a production-grade streaming machine learning architecture, leveraging Apache Kafka, PostgreSQL, and a dual-backend processing engine (Python/PySpark).
 
+> 🌐 **Live Demo:** Access the live application here: **[https://abdsabkari.duckdns.org/fraudapp/](https://abdsabkari.duckdns.org/fraudapp/)**
+
 ---
 
 ## 🎯 Project Purpose
@@ -97,8 +99,8 @@ docker compose --profile simulation up -d --build
 
 ![Dashboard Overview](fraud_app_acceuil.png)
 
-Once the containers are running, navigate to:
-- **SOC Dashboard:** http://localhost:8501
+- **Live Production URL:** [https://abdsabkari.duckdns.org/fraudapp/](https://abdsabkari.duckdns.org/fraudapp/)
+- **Local Dashboard:** http://localhost:8501
 - **Kafka UI:** http://localhost:8080
 
 The dashboard is split into three professional tiers:
