@@ -1,32 +1,45 @@
-# Enterprise Real-Time Fraud Detection System
+<div align="center">
 
-An end-to-end, containerized Real-Time Fraud Detection System designed to ingest, score, and visualize credit card transactions at scale. This project demonstrates a production-grade streaming machine learning architecture, leveraging Apache Kafka, PostgreSQL, and a dual-backend processing engine (Python/PySpark).
+# 🛡️ FinSec Real-Time Fraud Detection System
 
-> 🌐 **Live Demo:** Access the live application here: **[https://abdsabkari.duckdns.org/fraudapp/](https://abdsabkari.duckdns.org/fraudapp/)**
+**Enterprise Real-Time Transaction Monitoring & Streaming Analytics Platform**
+
+[![CI Pipeline](https://github.com/abderrahmane0402/Credit-Card-Fraud-Detection/actions/workflows/ci.yml/badge.svg)](https://github.com/abderrahmane0402/Credit-Card-Fraud-Detection/actions/workflows/ci.yml)
+[![Apache Kafka](https://img.shields.io/badge/Apache_Kafka-2.8+-231F20?logo=apachekafka&logoColor=white)](https://kafka.apache.org)
+[![Apache Spark](https://img.shields.io/badge/Apache_Spark-3.5+-E25A1C?logo=apachespark&logoColor=white)](https://spark.apache.org)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://python.org)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17+-4169E1?logo=postgresql&logoColor=white)](https://postgresql.org)
+[![XGBoost](https://img.shields.io/badge/XGBoost-3.2+-EB5424?logo=xgboost&logoColor=white)](https://xgboost.readthedocs.io)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.40+-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docker.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+An end-to-end, containerized Real-Time Fraud Detection System designed to ingest, score, and visualize credit card transactions at scale using Apache Kafka, PostgreSQL, XGBoost, and PySpark streaming.
+
+🌐 **Live Demo:** [https://abdsabkari.duckdns.org/fraudapp/](https://abdsabkari.duckdns.org/fraudapp/)
+
+[Features](#-key-features) • [Architecture](#️-architecture) • [Dataset & Model](#-the-model--dataset) • [Quickstart](#-running-the-system) • [SOC Dashboard](#-the-soc-dashboard) • [Tech Stack](#️-technology-stack) • [License](#-license)
+
+</div>
+
+---
+
+## ⚡ Key Features
+
+- **⚡ Sub-Second Inference Latency**: Real-time scoring of streaming credit card transactions using an optimized XGBoost classification pipeline.
+- **🌊 Distributed Message Streaming**: Fault-tolerant message ingestion and dead-letter queue (DLQ) isolation powered by **Apache Kafka**.
+- **🔥 Dual-Backend Processing Engine**: Seamlessly toggle between a lightweight Python streaming consumer and a distributed **Apache PySpark** Structured Streaming engine.
+- **🛡️ Enterprise SOC Operations Center**: Modern operations dashboard featuring live KPI counters, interactive Plotly traffic charts, and a real-time **Critical Threat Feed**.
+- **🧠 Model Diagnostics & Telemetry**: Live confusion matrices, risk score distributions, precision/recall monitoring, and F1-score validation tracking.
+- **⚙️ Self-Maintaining Storage Pipeline**: Automated rolling-window data retention and idempotent PostgreSQL batch inserts preventing database bloat.
+- **🐳 100% Production Containerized**: Multi-container Docker Compose setup with orchestrated healthchecks, automated topic initialization, and automated recovery.
+- **☁️ Cloud Deployed**: Live on Oracle Cloud Infrastructure (OCI) behind a **Caddy** reverse proxy with automatic SSL/HTTPS encryption.
 
 ---
 
 ## 🎯 Project Purpose
 
 Financial institutions require sub-second latencies when determining if a transaction is legitimate or fraudulent. This project simulates a real-world banking environment where credit card transactions are streamed into a message broker (Kafka), processed and scored in real-time by an advanced Machine Learning model (XGBoost), and materialized into a live Security Operations Center (SOC) dashboard.
-
-## 🧠 The Model & Dataset
-
-### The Dataset
-This system uses the highly popular **[Credit Card Fraud Detection dataset from Kaggle](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud)**. 
-- Due to confidentiality, the dataset features (`V1` through `V28`) have been anonymized using Principal Component Analysis (PCA). 
-- The only non-transformed features are `Time` and `Amount`. 
-- The dataset is highly imbalanced, with frauds accounting for just 0.172% of all transactions.
-
-### Training & Notebooks
-The machine learning model was developed and trained in a Kaggle notebook environment. 
-- You can find the exact training code, feature engineering, and evaluation logic inside the `notebooks/` directory (`fraud_detection_modeling_kaggle.ipynb`).
-- We utilize an **XGBoost Classifier**. Because accuracy is a misleading metric for highly imbalanced data, the model was optimized for **PR-AUC (Precision-Recall Area Under Curve)**, achieving a Test F1 Score of 0.86.
-
-### How it Scores Fraud
-1. The model receives a transaction containing the 28 PCA features and the `Amount`.
-2. It outputs a continuous **Risk Score** (between 0.0 and 1.0).
-3. The system compares this risk score against a strictly calibrated **Decision Threshold**. If the risk score exceeds the threshold, the transaction is immediately classified as `1` (Fraud) and flagged in the dashboard.
 
 ---
 
@@ -48,6 +61,26 @@ flowchart LR
     DB --> Dashboard[Streamlit SOC Dashboard]
 ```
 *(Note: Only one Processing Engine runs at a time. The system allows you to easily hot-swap between a standard Python consumer and a distributed PySpark engine).*
+
+---
+
+## 🧠 The Model & Dataset
+
+### The Dataset
+This system uses the highly popular **[Credit Card Fraud Detection dataset from Kaggle](https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud)**. 
+- Due to confidentiality, the dataset features (`V1` through `V28`) have been anonymized using Principal Component Analysis (PCA). 
+- The only non-transformed features are `Time` and `Amount`. 
+- The dataset is highly imbalanced, with frauds accounting for just 0.172% of all transactions.
+
+### Training & Notebooks
+The machine learning model was developed and trained in a Kaggle notebook environment. 
+- You can find the exact training code, feature engineering, and evaluation logic inside the `notebooks/` directory (`fraud_detection_modeling_kaggle.ipynb`).
+- We utilize an **XGBoost Classifier**. Because accuracy is a misleading metric for highly imbalanced data, the model was optimized for **PR-AUC (Precision-Recall Area Under Curve)**, achieving a Test F1 Score of 0.86.
+
+### How it Scores Fraud
+1. The model receives a transaction containing the 28 PCA features and the `Amount`.
+2. It outputs a continuous **Risk Score** (between 0.0 and 1.0).
+3. The system compares this risk score against a strictly calibrated **Decision Threshold**. If the risk score exceeds the threshold, the transaction is immediately classified as `1` (Fraud) and flagged in the dashboard.
 
 ---
 
@@ -116,7 +149,9 @@ The dashboard is split into three professional tiers:
 - **Database:** PostgreSQL (with real-time materialized views)
 - **Modeling:** XGBoost, Scikit-learn, Joblib
 - **Dashboard:** Streamlit, Plotly
-- **Infrastructure:** Docker, Docker Compose
+- **Infrastructure:** Docker, Docker Compose, Caddy Reverse Proxy, Oracle Cloud (OCI)
+
+---
 
 ## 📜 License
-MIT License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
