@@ -16,7 +16,7 @@
 
 An end-to-end, containerized Real-Time Fraud Detection System designed to ingest, score, and visualize credit card transactions at scale using Apache Kafka, PostgreSQL, XGBoost, and PySpark streaming.
 
-🌐 **Live Demo:** [https://abdsabkari.duckdns.org/fraudapp/](https://abdsabkari.duckdns.org/fraudapp/)
+🌐 **Live Demo:** [https://sabkari-dev.ddns.net/fraudapp/](https://sabkari-dev.ddns.net/fraudapp/)
 
 [Features](#-key-features) • [Architecture](#️-architecture) • [Dataset & Model](#-the-model--dataset) • [Quickstart](#-running-the-system) • [SOC Dashboard](#-the-soc-dashboard) • [Tech Stack](#️-technology-stack) • [License](#-license)
 
